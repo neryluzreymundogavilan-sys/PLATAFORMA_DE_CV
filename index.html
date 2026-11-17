@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GENERADOR WEB DE CURRÍCULUM (CV) — Dossier Documental</title>
+    
+    <!-- Tailwind CSS vía CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter, Plus Jakarta Sans y Playfair Display -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome para iconos profesionales -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <!-- html2pdf.js vía CDN para exportación directa a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Mammoth.js vía CDN para leer archivos Word (.docx) directamente en el navegador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --accent-primary: #1e293b;
+            --accent-secondary: #334155;
+            --accent-light: #f1f5f9;
+            --accent-text: #0f172a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e5e7eb;
+        }
+
+        h1, h2, h3, .font-heading {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Hoja A4 exacta (210mm x 297mm) */
+        .a4-page {
+            width: 210mm;
+            height: 297mm;
+            min-height: 297mm;
+            max-height: 297mm;
+            background: white;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.14), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+            margin: 0 auto 28px auto;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .preview-scale-wrapper {
+            transform-origin: top center;
+            transition: transform 0.2s ease;
+        }
+
+        /* Estilos para el contenido de documentos Word (.docx) importados */
+        .docx-preview-content {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #1e293b;
+            word-break: break-word;
+        }
+        .docx-preview-content p {
+            margin-bottom: 0.75rem;
+        }
+        .docx-preview-content h1,
+        .docx-preview-content h2,
+        .docx-preview-content h3,
+        .docx-preview-content h4 {
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+        .docx-preview-content h1 { font-size: 1.25rem; }
+        .docx-preview-content h2 { font-size: 1.1rem; }
+        .docx-preview-content h3 { font-size: 0.95rem; }
+        .docx-preview-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 11px;
+        }
+        .docx-preview-content th,
+        .docx-preview-content td {
+            border: 1px solid #cbd5e1;
+            padding: 6px 10px;
+            text-align: left;
+        }
+        .docx-preview-content th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+        .docx-preview-content ul,
+        .docx-preview-content ol {
+            margin: 0.5rem 0 0.75rem 1.5rem;
+        }
+        .docx-preview-content ul { list-style-type: disc; }
+        .docx-preview-content ol { list-style-type: decimal; }
+        .docx-preview-content li { margin-bottom: 0.25rem; }
+        .docx-preview-content img {
+            max-width: 100%;
+            max-height: 200mm;
+            height: auto;
+            margin: 0.75rem auto;
+            display: block;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #cv-document, #cv-document * { visibility: visible; }
+            #cv-document {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 210mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                transform: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .a4-page {
+                box-shadow: none !important;
+                margin: 0 !important;
+                page-break-after: always;
+                break-after: page;
+            }
+            .a4-page:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
+            .docx-preview-content {
+                overflow: visible !important;
+                max-height: none !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+        }
+    </style>
+    <!-- Firebase SDK (Realtime Database) para sincronización en tiempo real entre celulares y PC -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-slate-800">
+
+    <!-- Notificación Toast flotante -->
+    <div id="toast-notification" class="fixed bottom-5 right-5 z-[120] transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700">
+            <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+            <span id="toast-message" class="text-sm font-medium">Acción completada</span>
+        </div>
+    </div>
+
+    <!-- Pantalla de Acceso, Registro y Solicitud para Estudiantes / Egresados -->
+    <div id="auth-gate" class="fixed inset-0 z-[100] bg-slate-950/95 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-7 space-y-5">
+            <div class="text-center">
+                <div class="mx-auto w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-2xl shadow-lg"><i class="fa-solid fa-graduation-cap"></i></div>
+                <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-3">PORTAL DE CURRÍCULUM (CV)</h2>
+                <p class="text-xs text-slate-500 mt-1">Regístrate para enviar tu solicitud de ingreso a la administradora</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="showAuthMode('register')" id="auth-tab-register" class="py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold transition">Registrarme</button>
+                <button onclick="showAuthMode('login')" id="auth-tab-login" class="py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold transition">Ya estoy aprobado</button>
+            </div>
+
+            <!-- Formulario de Registro / Solicitud -->
+            <div id="auth-register-box" class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nombres y Apellidos *</label>
+                    <input id="student-reg-name" type="text" placeholder="Ej. Juan Pérez Gómez" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Correo Electrónico *</label>
+                    <input id="student-reg-email" type="email" placeholder="estudiante@gmail.com" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Teléfono / WhatsApp *</label>
+                    <input id="student-reg-phone" type="tel" placeholder="987654321" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Contraseña *</label>
+                    <input id="student-reg-pass" type="password" minlength="6" placeholder="Mínimo 6 caracteres" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button onclick="studentRegister()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-3 text-sm font-bold shadow-md transition">
+                    Enviar solicitud a la Administradora
+                </button>
+            </div>
+
+            <!-- Formulario de Inicio de Sesión -->
+            <div id="auth-login-box" class="hidden space-y-3">
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Correo Electrónico</label>
+                    <input id="student-login-email" type="email" placeholder="estudiante@gmail.com" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Contraseña</label>
+                    <input id="student-login-pass" type="password" placeholder="Tu contraseña" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" onkeydown="if(event.key==='Enter') studentLogin()">
+                </div>
+                <button onclick="studentLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-3 text-sm font-bold shadow-md transition">
+                    Ingresar al Generador de CV
+                </button>
+            </div>
+
+            <p id="auth-message" class="text-xs text-center font-medium min-h-[20px]"></p>
+
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span class="text-[11px] text-slate-400">¿Eres la administradora?</span>
+                <button onclick="adminDirectEnter()" class="text-[11px] font-bold text-slate-800 hover:underline flex items-center gap-1">
+                    <i class="fa-solid fa-shield-halved text-indigo-600"></i> Entrar como Administradora
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Modal de Bienvenida / Selección de Carrera para Estudiante -->
+    <div id="welcome-student-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-5">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shrink-0">
+                    <i class="fa-solid fa-graduation-cap text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Bienvenida/o al Portal de CV</h3>
+                    <p class="text-xs text-slate-500">Selecciona tu carrera para habilitar las opciones automáticas</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">1. Tu Nombre Completo *</label>
+                    <input type="text" id="welcome-name-input" placeholder="Ej. Juan Pérez Gómez" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">2. Elige tu Carrera *</label>
+                    <select id="welcome-career-select" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">3. Tu Teléfono / WhatsApp *</label>
+                    <input type="text" id="welcome-contact-input" placeholder="Ej. 987654321" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="button" onclick="closeWelcomeModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition">Explorar primero</button>
+                <button type="button" onclick="confirmStudentWelcome()" class="px-5 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition">
+                    Comenzar mi CV <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación al Enviar Solicitud de Generación de CV -->
+    <div id="submit-review-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex items-center gap-3 text-indigo-600">
+                <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <i class="fa-solid fa-paper-plane text-lg"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">Enviar CV a Revisión</h3>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+                Tu currículum y tus <strong id="modal-cert-count">0</strong> certificados/diplomas serán enviados directamente al WhatsApp de la <strong>Ingeniera Administradora (926 978 280)</strong>.
+            </p>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                <p><span class="font-semibold text-slate-700">Estudiante:</span> <span id="summary-review-name">-</span></p>
+                <p><span class="font-semibold text-slate-700">Carrera:</span> <span id="summary-review-career">-</span></p>
+            </div>
+            <div class="space-y-2 pt-2">
+                <button type="button" onclick="finalizeSubmissionAndNotify('whatsapp')" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-xs font-semibold rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-base"></i> Enviar Solicitud a WhatsApp (926 978 280)
+                </button>
+                <button type="button" onclick="closeSubmitReviewModal()" class="w-full py-2 text-xs font-medium text-slate-500 hover:text-slate-800 transition">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Panel de Administradora (Ingeniera) -->
+    <div id="admin-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-500 flex items-center justify-center">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold leading-none">Panel de Revisión — Ingeniera Administradora</h3>
+                        <p class="text-[11px] text-slate-400 mt-1">Aprueba o rechaza las solicitudes enviadas por los estudiantes</p>
+                    </div>
+                </div>
+                <button onclick="closeAdminModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="admin-dashboard-box" class="flex flex-1 flex-col overflow-hidden">
+                <div class="px-6 pt-4 pb-3 bg-indigo-50/80 border-b border-indigo-100 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 text-xs">
+                        <span id="cloud-sync-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Sincronización Multi-Dispositivo Activa
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="openCloudConfigModal()" class="px-2.5 py-1.5 text-[11px] font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                            <i class="fa-solid fa-cloud mr-1 text-indigo-600"></i> Base en la Nube
+                        </button>
+                        <button type="button" onclick="refreshAdminRequests()" class="px-2.5 py-1.5 text-[11px] font-semibold bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition">
+                            <i class="fa-solid fa-rotate mr-1"></i> Actualizar Lista
+                        </button>
+                    </div>
+                </div>
+                <div class="px-6 pt-4 pb-6 overflow-y-auto flex-1 bg-slate-100/60 space-y-5">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-sm font-bold text-slate-800"><i class="fa-solid fa-user-clock text-indigo-600 mr-2"></i>Solicitudes de acceso de estudiantes y egresados</h4>
+                            <span id="requests-counter-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">0 registros</span>
+                        </div>
+                        <div id="access-requests-list" class="space-y-3"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-800 mb-3"><i class="fa-solid fa-file-circle-check text-emerald-600 mr-2"></i>Solicitudes de revisión de CV enviadas desde celulares</h4>
+                        <div id="cv-submissions-list" class="space-y-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Selector Categorizado de Carreras -->
+    <div id="careers-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Catálogo de Carreras Profesionales y Técnicas</h3>
+                    <p class="text-xs text-slate-500">Haz clic en una carrera para asignar todas sus opciones seleccionables</p>
+                </div>
+                <button onclick="closeCareersModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-4 border-b border-slate-100 bg-white">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                    <input type="text" id="career-search-input" oninput="filterCareersModal(this.value)" placeholder="Buscar carrera..." class="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+            </div>
+            <div id="careers-modal-body" class="p-5 overflow-y-auto space-y-5 flex-1"></div>
+        </div>
+    </div>
+
+    <!-- Modal Configuración Base de Datos en la Nube (Opcional / Automática) -->
+    <div id="cloud-config-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-cloud-arrow-up text-indigo-600 mr-2"></i>Sincronización entre Celulares y PC</h3>
+                <button onclick="closeCloudConfigModal()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+                Por defecto la web usa un canal sincronizado en la nube para recibir solicitudes enviadas desde cualquier celular. Si deseas usar tu propia base de datos Firebase Realtime Database, pega su URL aquí:
+            </p>
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">URL de Firebase Realtime Database (opcional)</label>
+                <input type="url" id="custom-firebase-url" placeholder="https://tu-proyecto-default-rtdb.firebaseio.com" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="resetCloudUrl()" class="px-3 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-xl">Usar canal por defecto</button>
+                <button type="button" onclick="saveCloudUrl()" class="px-4 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700">Guardar y Conectar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra Superior (Header Principal) -->
+    <header class="bg-white border-b border-slate-200 px-4 lg:px-6 py-3 flex flex-wrap items-center justify-between gap-3 z-30 shrink-0">
+    <!-- Barra de sesión -->
+    <div id="session-strip" class="hidden bg-indigo-50 border-b border-indigo-100 px-4 py-2 text-xs flex justify-between items-center z-40">
+        <span id="session-label" class="font-semibold text-indigo-900"></span>
+        <button onclick="logoutUser()" class="font-bold text-rose-600 hover:underline">Cerrar sesión</button>
+    </div>
+
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-md">
+                <i class="fa-solid fa-file-signature text-lg"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-none">GENERADOR WEB DE <span class="text-indigo-600">CURRÍCULUM (CV)</span></h1>
+                    <span id="approval-status-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                        <i class="fa-solid fa-clock text-[9px]"></i> Pendiente de Aprobación
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5 hidden sm:block">Currículum Vitae y Dossier de Certificados a Página Completa</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-2.5">
+            <button onclick="openAdminModal()" class="relative px-3 py-2 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition flex items-center gap-1.5">
+                <i class="fa-solid fa-user-shield text-indigo-600"></i>
+                <span class="hidden sm:inline">Panel Admin</span>
+            </button>
+
+            <button onclick="openWelcomeModal()" class="px-3 py-2 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition flex items-center gap-1.5">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span class="hidden md:inline">Elegir Carrera</span>
+            </button>
+
+            <button onclick="openSubmitReviewModal()" class="px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-xl shadow-md transition flex items-center gap-2">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Generar CV</span>
+            </button>
+
+            <button id="btn-download-pdf" onclick="exportToPDF()" class="px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center gap-2">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span class="hidden sm:inline">Descargar PDF</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Selector de Vista Móvil -->
+    <div class="lg:hidden bg-slate-100 p-2 border-b border-slate-200 flex gap-2 shrink-0">
+        <button id="mobile-tab-editor" onclick="switchMobileView('editor')" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-slate-900 shadow-sm transition">
+            <i class="fa-solid fa-pen-to-square mr-1.5"></i> Editar Datos
+        </button>
+        <button id="mobile-tab-preview" onclick="switchMobileView('preview')" class="flex-1 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:bg-white/60 transition">
+            <i class="fa-solid fa-eye mr-1.5"></i> Vista Previa A4
+        </button>
+    </div>
+
+    <!-- Contenedor Principal Dividido -->
+    <main class="flex-1 flex overflow-hidden relative">
+        
+        <!-- PANEL IZQUIERDO: Editor Interactivo con Selectores por Carrera -->
+        <section id="editor-panel" class="w-full lg:w-[45%] xl:w-[44%] bg-white border-r border-slate-200 flex flex-col h-full z-10">
+            
+            <nav class="flex border-b border-slate-200 bg-slate-50/70 px-2 pt-2 gap-1 overflow-x-auto shrink-0">
+                <button onclick="switchFormTab('personal')" id="tab-btn-personal" class="form-tab-btn px-3 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-indigo-600 text-indigo-600 bg-white flex items-center gap-1.5 whitespace-nowrap transition">
+                    <i class="fa-solid fa-user"></i> Personal
+                </button>
+                <button onclick="switchFormTab('certificates')" id="tab-btn-certificates" class="form-tab-btn px-3 py-2.5 text-xs font-medium rounded-t-xl border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap transition">
+                    <i class="fa-solid fa-award text-amber-500"></i> Certificados y Word
+                </button>
+                <button onclick="switchFormTab('experience')" id="tab-btn-experience" class="form-tab-btn px-3 py-2.5 text-xs font-medium rounded-t-xl border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap transition">
+                    <i class="fa-solid fa-briefcase"></i> Experiencia
+                </button>
+                <button onclick="switchFormTab('education')" id="tab-btn-education" class="form-tab-btn px-3 py-2.5 text-xs font-medium rounded-t-xl border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap transition">
+                    <i class="fa-solid fa-graduation-cap"></i> Educación
+                </button>
+                <button onclick="switchFormTab('skills')" id="tab-btn-skills" class="form-tab-btn px-3 py-2.5 text-xs font-medium rounded-t-xl border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap transition">
+                    <i class="fa-solid fa-bolt"></i> Habilidades
+                </button>
+                <button onclick="switchFormTab('portfolio')" id="tab-btn-portfolio" class="form-tab-btn px-3 py-2.5 text-xs font-medium rounded-t-xl border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap transition">
+                    <i class="fa-solid fa-folder-open"></i> Portafolio
+                </button>
+            </nav>
+
+            <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+                
+                <!-- PESTAÑA 1: DATOS PERSONALES -->
+                <div id="tab-content-personal" class="form-tab-content space-y-5">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Información Personal y Carrera</h2>
+                        <p class="text-xs text-slate-500">Selecciona tu carrera para desbloquear las listas desplegables adaptadas.</p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center gap-4">
+                        <div class="relative w-16 h-16 rounded-2xl overflow-hidden bg-slate-200 border-2 border-white shadow-sm shrink-0 flex items-center justify-center">
+                            <img id="form-photo-preview" src="" alt="Foto" class="w-full h-full object-cover hidden">
+                            <i id="form-photo-placeholder" class="fa-solid fa-camera text-slate-400 text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Fotografía Profesional del Estudiante</label>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <label class="cursor-pointer px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg shadow-xs transition">
+                                    <i class="fa-solid fa-upload mr-1"></i> Subir foto
+                                    <input type="file" id="photo-upload" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)">
+                                </label>
+                                <button type="button" id="btn-remove-photo" onclick="removePhoto()" class="hidden px-2.5 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                                    Quitar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo *</label>
+                            <input type="text" id="input-name" oninput="handleNameChange(this.value)" placeholder="Ej. Juan Pérez Gómez" class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                        </div>
+
+                        <div class="sm:col-span-2">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs font-semibold text-slate-700">Carrera Profesional / Técnica *</label>
+                                <button type="button" onclick="openCareersModal()" class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition">
+                                    <i class="fa-solid fa-list-check"></i> Ver catálogo de carreras
+                                </button>
+                            </div>
+                            <select id="select-career" onchange="applyCareerSelection(this.value)" class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition font-medium"></select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Correo Electrónico *</label>
+                            <input type="email" id="input-email" oninput="updatePersonal('email', this.value)" placeholder="estudiante@gmail.com" class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Teléfono / WhatsApp *</label>
+                            <input type="text" id="input-phone" oninput="updatePersonal('phone', this.value)" placeholder="987 654 321" class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Ubicación</label>
+                            <input type="text" id="input-location" oninput="updatePersonal('location', this.value)" placeholder="Ciudad, País" class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Sitio Web / Portafolio</label>
+                            <input type="text" id="input-website" oninput="updatePersonal('website', this.value)" placeholder="tusitio.dev" class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                        </div>
+
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Perfil / Resumen Profesional (Selecciona según tu carrera)</label>
+                            <select id="select-summary" onchange="updatePersonal('summary', this.value)" class="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition leading-relaxed"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PESTAÑA 2: CERTIFICADOS Y WORD -->
+                <div id="tab-content-certificates" class="form-tab-content hidden space-y-5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900">Certificados y Dossier Word</h2>
+                            <p class="text-xs text-slate-500">Sube constancias, imágenes o documentos Word para anexar a tu hoja A4</p>
+                        </div>
+                        <label class="cursor-pointer px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition">
+                            <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Subir Archivos
+                            <input type="file" accept="image/*,.docx" multiple class="hidden" onchange="handleMultipleCertificatesUpload(event)">
+                        </label>
+                    </div>
+
+                    <div class="p-4 bg-indigo-50/60 border border-indigo-100 rounded-2xl space-y-3">
+                        <div class="flex items-center gap-2 text-indigo-900">
+                            <i class="fa-solid fa-file-word text-lg text-blue-600"></i>
+                            <div>
+                                <h4 class="text-xs font-bold">Importar Certificado desde Word (.docx)</h4>
+                                <p class="text-[11px] text-slate-500">Lee constancias en texto o certificados escaneados que hayas pegado dentro de Word.</p>
+                            </div>
+                        </div>
+                        <label class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-xl cursor-pointer shadow-xs transition">
+                            <i class="fa-solid fa-folder-open text-indigo-600"></i> Seleccionar documento .docx
+                            <input type="file" accept=".docx" class="hidden" onchange="handleWordDocUpload(event)">
+                        </label>
+                    </div>
+
+                    <div id="certificates-list-container" class="space-y-4"></div>
+                </div>
+
+                <!-- PESTAÑA 3: EXPERIENCIA -->
+                <div id="tab-content-experience" class="form-tab-content hidden space-y-5">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Experiencia Laboral / Prácticas</h2>
+                        <p class="text-xs text-slate-500">Todos los campos cuentan con listas desplegables adaptadas a tu carrera.</p>
+                    </div>
+                    <div id="experience-list-container" class="space-y-4"></div>
+                </div>
+
+                <!-- PESTAÑA 4: EDUCACIÓN -->
+                <div id="tab-content-education" class="form-tab-content hidden space-y-5">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Formación Académica</h2>
+                        <p class="text-xs text-slate-500">Elige tu grado/título e institución de las listas desplegables.</p>
+                    </div>
+                    <div id="education-list-container" class="space-y-4"></div>
+                </div>
+
+                <!-- PESTAÑA 5: HABILIDADES -->
+                <div id="tab-content-skills" class="form-tab-content hidden space-y-5">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Habilidades y Competencias</h2>
+                        <p class="text-xs text-slate-500">Selecciona las habilidades clave recomendadas para tu carrera.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="select-new-skill" class="flex-1 px-3.5 py-2.5 text-xs bg-white border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                        <button type="button" onclick="addSelectedSkill()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition">Agregar</button>
+                    </div>
+                    <div id="skills-list-container" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <!-- PESTAÑA 6: PORTAFOLIO -->
+                <div id="tab-content-portfolio" class="form-tab-content hidden space-y-5">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Proyectos y Portafolio</h2>
+                        <p class="text-xs text-slate-500">Selecciona proyectos representativos de tu especialidad.</p>
+                    </div>
+                    <div id="portfolio-list-container" class="space-y-4"></div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- PANEL DERECHO: Vista Previa A4 -->
+        <section id="preview-panel" class="hidden lg:flex flex-1 bg-slate-300/75 flex-col h-full overflow-hidden">
+            <div id="preview-scroll-area" class="flex-1 overflow-auto p-4 sm:p-8 flex flex-col items-center gap-6">
+                <div id="preview-scale-wrapper" class="preview-scale-wrapper flex flex-col gap-6 items-center">
+                    <div id="cv-document" class="flex flex-col gap-6"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const DEFAULT_ADMIN_WHATSAPP = '51926978280';
+        const STORAGE_KEY = 'cvstudio_pro_v21_state';
+        const USERS_STORAGE_KEY = 'cvstudio_pro_users_v1';
+        const ADMIN_PIN = 'admin2026';
+
+        // Estado inicial completamente vacío para nuevos usuarios
+        let cvState = {
+            personal: { 
+                name: '', 
+                title: 'Ingeniería de Sistemas e Informática', 
+                email: '', 
+                phone: '', 
+                location: '', 
+                website: '', 
+                summary: '', 
+                photo: '' 
+            },
+            certificates: [],
+            experience: [
+                { role: '', company: '', period: '2025 - Presente', location: '', description: '' }
+            ],
+            education: [
+                { degree: '', institution: '', period: '2020 - 2024', details: '' }
+            ],
+            skills: [],
+            portfolio: [
+                { title: '', description: '' }
+            ]
+        };
+
+        const CAREERS_CATALOG = {
+            "Tecnología e Informática": [
+                "Ingeniería de Sistemas e Informática", 
+                "Arquitectura de Plataformas y Servicios de Tecnologías de la Información",
+                "Ingeniería de Software"
+            ],
+            "Ciencias de la Salud": [
+                "Enfermería Técnica / Licenciatura en Enfermería", 
+                "Farmacia y Bioquímica",
+                "Obstetricia"
+            ],
+            "Gestión y Negocios": [
+                "Administración de Empresas", 
+                "Contabilidad y Finanzas", 
+                "Secretariado Ejecutivo"
+            ],
+            "Ingeniería y Construcción": [
+                "Ingeniería Civil", 
+                "Construcción Civil",
+                "Arquitectura y Urbanismo"
+            ],
+            "Educación y Humanidades": [
+                "Educación Inicial / Primaria",
+                "Derecho y Ciencias Políticas"
+            ]
+        };
+
+        const CAREER_FULL_OPTIONS = {
+            "Ingeniería de Sistemas e Informática": {
+                profiles: [
+                    "Ingeniero de Sistemas e Informática especializado en arquitectura de plataformas, soporte técnico TI y desarrollo de soluciones web de alto impacto.",
+                    "Profesional en Tecnologías de la Información con sólida experiencia en administración de redes corporativas, bases de datos SQL y ciberseguridad.",
+                    "Especialista en sistemas informáticos enfocado en automatización de procesos institucionales, mantenimiento de infraestructura y soporte técnico."
+                ],
+                roles: [
+                    "Especialista en Soporte TI y Administración de Redes",
+                    "Desarrollador Full Stack Web Junior / Senior",
+                    "Analista de Base de Datos SQL / MySQL",
+                    "Administrador de Servidores Linux y Windows Server",
+                    "Consultor de Seguridad Informática y Auditoría"
+                ],
+                companies: [
+                    "Institución Pública / Área de Informática",
+                    "Municipalidad Provincial",
+                    "Dirección Regional de Educación",
+                    "Centro de Salud — Oficina de Estadística e Informática",
+                    "Consorcio Tecnológico Regional"
+                ],
+                achievements: [
+                    "• Administración y mantenimiento preventivo de redes LAN/WAN y servidores institucionales.",
+                    "• Desarrollo e implementación de sistemas de trámite documentario y gestión interna.",
+                    "• Soporte técnico de nivel 1 y 2 a estaciones de trabajo y usuarios administrativos.",
+                    "• Optimización de copias de seguridad y seguridad perimetral de bases de datos."
+                ],
+                degrees: [
+                    "Ingeniería de Sistemas e Informática",
+                    "Bachiller en Ingeniería de Sistemas",
+                    "Especialización en Administración de Redes y Servidores"
+                ],
+                institutions: [
+                    "Universidad Nacional",
+                    "Instituto de Educación Superior Tecnológico",
+                    "Universidad Privada"
+                ],
+                skills: [
+                    "Administración de Redes LAN/WAN",
+                    "Desarrollo Web (HTML, CSS, JS)",
+                    "Base de Datos SQL / MySQL",
+                    "Soporte Técnico y HelpDesk",
+                    "Seguridad Informática",
+                    "Servidores Windows / Linux"
+                ],
+                projects: [
+                    { title: "Sistema Integral de Gestión Documentaria", description: "Plataforma web para digitalización y seguimiento de expedientes administrativos." }
+                ]
+            },
+            "Arquitectura de Plataformas y Servicios de Tecnologías de la Información": {
+                profiles: [
+                    "Profesional Técnico en Arquitectura de Plataformas y Servicios de TI con dominio en soporte de infraestructura, redes y desarrollo de aplicaciones.",
+                    "Especialista en administración de plataformas tecnológicas, mantenimiento de equipos de cómputo y conectividad institucional."
+                ],
+                roles: [
+                    "Técnico en Arquitectura de Plataformas y Redes",
+                    "Soporte Técnico de Infraestructura TI",
+                    "Administrador de Plataformas Virtuales y Cloud",
+                    "Encargado de Laboratorio de Cómputo y Conectividad"
+                ],
+                companies: [
+                    "Instituto Tecnológico Superior",
+                    "Municipalidad Distrital",
+                    "UGEL Local",
+                    "Centro de Servicios Informáticos"
+                ],
+                achievements: [
+                    "• Configuración e instalación de servidores locales, switches y puntos de acceso inalámbrico.",
+                    "• Mantenimiento preventivo y correctivo de hardware y software institucional.",
+                    "• Administración de aulas virtuales y plataformas educativas digitales."
+                ],
+                degrees: [
+                    "Profesional Técnico en Arquitectura de Plataformas y Servicios de TI",
+                    "Certificación Modular en Gestión de Redes y Conectividad"
+                ],
+                institutions: [
+                    "Instituto de Educación Superior Tecnológico",
+                    "SENATI"
+                ],
+                skills: [
+                    "Mantenimiento de Hardware y Software",
+                    "Redes y Cableado Estructurado",
+                    "Administración de Plataformas Web",
+                    "Soporte Técnico Remoto y Presencial",
+                    "Ofimática Avanzada"
+                ],
+                projects: [
+                    { title: "Implementación de Aula Virtual Institucional", description: "Despliegue y soporte de plataforma educativa para docentes y estudiantes." }
+                ]
+            },
+            "Enfermería Técnica / Licenciatura en Enfermería": {
+                profiles: [
+                    "Profesional de Enfermería con sólida vocación de servicio, amplia experiencia en atención integral al paciente, triaje clínico y promoción de la salud.",
+                    "Especialista en cuidados asistenciales y salud comunitaria con estricto cumplimiento de protocolos de bioseguridad y atención humanizada."
+                ],
+                roles: [
+                    "Enfermera/o Asistencial en Triaje y Emergencias",
+                    "Técnico en Enfermería — Área de Hospitalización",
+                    "Coordinador/a de Campañas de Vacunación e Inmunizaciones",
+                    "Asistente de Salud Preventiva y Comunitaria"
+                ],
+                companies: [
+                    "Hospital Provincial",
+                    "Red de Salud Local — Microred",
+                    "Centro de Salud Materno Infantil",
+                    "Clínica Médica Regional"
+                ],
+                achievements: [
+                    "• Atención oportuna en triaje, control de signos vitales y administración segura de medicamentos.",
+                    "• Ejecución de campañas preventivas de vacunación y control de crecimiento y desarrollo (CRED).",
+                    "• Aplicación rigurosa de normas de bioseguridad y esterilización hospitalaria."
+                ],
+                degrees: [
+                    "Licenciatura en Enfermería",
+                    "Profesional Técnico en Enfermería Técnica",
+                    "Diplomado en Emergencias y Cuidados Críticos"
+                ],
+                institutions: [
+                    "Universidad Nacional",
+                    "Instituto Superior Tecnológico"
+                ],
+                skills: [
+                    "Triaje y Control de Signos Vitales",
+                    "Inmunizaciones y Salud Comunitaria",
+                    "Primeros Auxilios e Inyectables",
+                    "Protocolos de Bioseguridad",
+                    "Atención Humanizada al Paciente"
+                ],
+                projects: [
+                    { title: "Campaña Integral de Prevención y Vacunación", description: "Cobertura de atención preventiva en comunidades." }
+                ]
+            },
+            "Administración de Empresas": {
+                profiles: [
+                    "Profesional en Administración de Empresas enfocado en la optimización de procesos operativos, gestión logística y liderazgo de equipos multidisciplinarios.",
+                    "Administrador con sólida formación en planificación estratégica, control presupuestal y gestión documental pública y privada."
+                ],
+                roles: [
+                    "Asistente Administrativo y Logístico",
+                    "Analista de Gestión y Trámite Documentario",
+                    "Coordinador de Recursos Humanos y Operaciones",
+                    "Gestor de Compras y Control Patrimonial"
+                ],
+                companies: [
+                    "Municipalidad Provincial — Gerencia de Administración",
+                    "Oficina de Abastecimiento",
+                    "Entidad Financiera",
+                    "Empresa Comercial"
+                ],
+                achievements: [
+                    "• Optimización de tiempos de atención en procesos de logística, almacén y trámite documentario.",
+                    "• Elaboración de informes gerenciales, cuadros comparativos y control presupuestal.",
+                    "• Coordinación efectiva con proveedores y supervisión de cumplimiento contractual."
+                ],
+                degrees: [
+                    "Licenciatura en Administración de Empresas",
+                    "Bachiller en Ciencias Administrativas",
+                    "Técnico en Administración y Gestión Pública"
+                ],
+                institutions: [
+                    "Universidad Nacional",
+                    "Instituto Superior Tecnológico"
+                ],
+                skills: [
+                    "Gestión Logística y Almacenes",
+                    "Sistemas Administrativos",
+                    "Excel Avanzado y Tablas Dinámicas",
+                    "Gestión de Recursos Humanos",
+                    "Atención al Cliente y Trámite Documentario"
+                ],
+                projects: [
+                    { title: "Optimización de Control de Inventarios", description: "Reducción de mermas y tiempos de despacho en almacén central." }
+                ]
+            },
+            "Ingeniería Civil": {
+                profiles: [
+                    "Ingeniero Civil con experiencia en supervisión de obras de infraestructura, elaboración de expedientes técnicos, metrados y control de calidad.",
+                    "Especialista en construcción y diseño estructural con dominio de herramientas CAD y normativas vigentes de edificaciones."
+                ],
+                roles: [
+                    "Asistente de Residente de Obra",
+                    "Supervisor de Control de Calidad y Metrados",
+                    "Especialista en Diseño CAD y Topografía",
+                    "Inspector de Seguridad en Obras Civiles"
+                ],
+                companies: [
+                    "Gerencia de Infraestructura",
+                    "Gobierno Regional",
+                    "Constructora e Inmobiliaria",
+                    "Consorcio Vial"
+                ],
+                achievements: [
+                    "• Elaboración de metrados, presupuestos y valorizaciones periódicas de obra.",
+                    "• Supervisión en campo de partidas de concreto armado, saneamiento y pavimentación.",
+                    "• Implementación de planes de seguridad y salud en el trabajo (SSOMA) en obra."
+                ],
+                degrees: [
+                    "Ingeniería Civil",
+                    "Bachiller en Ingeniería Civil",
+                    "Especialización en Residencia y Supervisión de Obras"
+                ],
+                institutions: [
+                    "Universidad Nacional",
+                    "SENCICO"
+                ],
+                skills: [
+                    "AutoCAD / Civil 3D",
+                    "S10 Costos y Presupuestos",
+                    "MS Project y Programación de Obras",
+                    "Metrados y Valorizaciones",
+                    "Seguridad en Obra (SSOMA)"
+                ],
+                projects: [
+                    { title: "Mejoramiento de Infraestructura Vial Urbana", description: "Supervisión técnica de pavimentación y drenaje pluvial." }
+                ]
+            }
+        };
+
+        function getOptionsForCareer(careerName) {
+            const key = Object.keys(CAREER_FULL_OPTIONS).find(k =>
+                careerName.toLowerCase().includes(k.toLowerCase()) ||
+                k.toLowerCase().includes(careerName.toLowerCase())
+            );
+            if (key) return CAREER_FULL_OPTIONS[key];
+
+            return {
+                profiles: [
+                    `Profesional en ${careerName} con sólida formación académica, ética laboral y orientación al logro de resultados institucionales.`,
+                    `Especialista en ${careerName} con capacidad de trabajo en equipo, adaptación rápida y dominio de herramientas de gestión.`
+                ],
+                roles: [
+                    `Especialista en ${careerName}`,
+                    `Asistente Profesional de ${careerName}`,
+                    `Coordinador de Proyectos en ${careerName}`,
+                    `Analista Técnico en ${careerName}`
+                ],
+                companies: [
+                    "Institución Pública",
+                    "Municipalidad",
+                    "Empresa Privada del Sector",
+                    "Consorcio de Servicios Profesionales"
+                ],
+                achievements: [
+                    `• Ejecución eficiente de funciones especializadas en el área de ${careerName}.`,
+                    "• Cumplimiento de metas operativas, elaboración de informes y mejora continua de procesos.",
+                    "• Atención de calidad y trabajo coordinado con equipos multidisciplinarios."
+                ],
+                degrees: [
+                    `Título Profesional en ${careerName}`,
+                    `Egresado / Bachiller en ${careerName}`
+                ],
+                institutions: [
+                    "Universidad Nacional",
+                    "Instituto de Educación Superior Tecnológico"
+                ],
+                skills: [
+                    `Gestión en ${careerName}`,
+                    "Microsoft Office Avanzado",
+                    "Trabajo en Equipo y Liderazgo",
+                    "Redacción de Informes Técnicos"
+                ],
+                projects: [
+                    { title: `Proyecto Aplicado en ${careerName}`, description: "Implementación de mejoras operativas y diagnóstico institucional." }
+                ]
+            };
+        }
+
+        function applyCareerSelection(careerName) {
+            cvState.personal.title = careerName;
+            const opts = getOptionsForCareer(careerName);
+
+            cvState.personal.summary = opts.profiles[0];
+
+            for (let i = 0; i < cvState.experience.length; i++) {
+                if (cvState.experience[i]) {
+                    cvState.experience[i].role = opts.roles[i % opts.roles.length];
+                    cvState.experience[i].company = opts.companies[i % opts.companies.length];
+                    cvState.experience[i].description = opts.achievements[i % opts.achievements.length];
+                }
+            }
+
+            if (cvState.education.length > 0) {
+                cvState.education[0].degree = opts.degrees[0];
+                cvState.education[0].institution = opts.institutions[0];
+            }
+
+            if (cvState.skills.length === 0 && opts.skills.length > 0) {
+                cvState.skills = opts.skills.slice(0, 4).map(s => ({ name: s, level: "Avanzado" }));
+            }
+
+            if (cvState.portfolio.length === 0 && opts.projects.length > 0) {
+                cvState.portfolio = [opts.projects[0]];
+            }
+
+            syncAllSelectorsAndRender();
+        }
+
+        function syncAllSelectorsAndRender() {
+            const opts = getOptionsForCareer(cvState.personal.title);
+
+            const careerSelect = document.getElementById('select-career');
+            if (careerSelect) {
+                careerSelect.innerHTML = Object.values(CAREERS_CATALOG).flat().map(c =>
+                    `<option value="${c}" ${cvState.personal.title === c ? 'selected' : ''}>${c}</option>`
+                ).join('');
+            }
+
+            const summarySelect = document.getElementById('select-summary');
+            if (summarySelect) {
+                summarySelect.innerHTML = opts.profiles.map(p =>
+                    `<option value="${escapeHTML(p)}" ${cvState.personal.summary === p ? 'selected' : ''}>${escapeHTML(p)}</option>`
+                ).join('');
+            }
+
+            document.getElementById('input-name').value = cvState.personal.name || '';
+            document.getElementById('input-email').value = cvState.personal.email || '';
+            document.getElementById('input-phone').value = cvState.personal.phone || '';
+            document.getElementById('input-location').value = cvState.personal.location || '';
+            document.getElementById('input-website').value = cvState.personal.website || '';
+
+            renderExperienceForm(opts);
+            renderEducationForm(opts);
+            renderSkillsForm(opts);
+            renderPortfolioForm(opts);
+            renderCertificatesForm();
+            saveAndRender();
+        }
+
+        function renderExperienceForm(opts) {
+            const container = document.getElementById('experience-list-container');
+            if (!container) return;
+            const periods = ["2025 - Presente", "2024 - 2025", "2023 - 2024", "2022 - 2023", "2021 - 2022"];
+            const locations = ["Ciudad, País", "Local", "Regional"];
+
+            container.innerHTML = cvState.experience.map((exp, idx) => `
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-700">Experiencia #${idx + 1}</span>
+                        <span class="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Selección por Carrera</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Cargo / Especialidad *</label>
+                            <select onchange="updateExperience(${idx}, 'role', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                                ${opts.roles.map(r => `<option value="${escapeHTML(r)}" ${exp.role === r ? 'selected' : ''}>${escapeHTML(r)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Institución / Empresa *</label>
+                            <select onchange="updateExperience(${idx}, 'company', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                                ${opts.companies.map(c => `<option value="${escapeHTML(c)}" ${exp.company === c ? 'selected' : ''}>${escapeHTML(c)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Periodo</label>
+                            <select onchange="updateExperience(${idx}, 'period', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none">
+                                ${periods.map(p => `<option value="${p}" ${exp.period === p ? 'selected' : ''}>${p}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Ubicación</label>
+                            <select onchange="updateExperience(${idx}, 'location', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none">
+                                ${locations.map(l => `<option value="${l}" ${exp.location === l ? 'selected' : ''}>${l}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Funciones y Logros</label>
+                            <select onchange="updateExperience(${idx}, 'description', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none">
+                                ${opts.achievements.map(a => `<option value="${escapeHTML(a)}" ${exp.description === a ? 'selected' : ''}>${escapeHTML(a)}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderEducationForm(opts) {
+            const container = document.getElementById('education-list-container');
+            if (!container) return;
+            const periods = ["2020 - 2024", "2021 - 2025", "2022 - 2024", "2019 - 2023"];
+            const detailsList = ["Egresado", "Titulado", "Estudios concluidos", "En curso"];
+
+            container.innerHTML = cvState.education.map((edu, idx) => `
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Grado o Título *</label>
+                            <select onchange="updateEducation(${idx}, 'degree', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none">
+                                ${opts.degrees.map(d => `<option value="${escapeHTML(d)}" ${edu.degree === d ? 'selected' : ''}>${escapeHTML(d)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Institución Educativa *</label>
+                            <select onchange="updateEducation(${idx}, 'institution', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none">
+                                ${opts.institutions.map(i => `<option value="${escapeHTML(i)}" ${edu.institution === i ? 'selected' : ''}>${escapeHTML(i)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Periodo</label>
+                                <select onchange="updateEducation(${idx}, 'period', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none">
+                                    ${periods.map(p => `<option value="${p}" ${edu.period === p ? 'selected' : ''}>${p}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Condición / Mérito</label>
+                                <select onchange="updateEducation(${idx}, 'details', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none">
+                                    ${detailsList.map(det => `<option value="${det}" ${edu.details === det ? 'selected' : ''}>${det}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderSkillsForm(opts) {
+            const selectSkill = document.getElementById('select-new-skill');
+            if (selectSkill) {
+                selectSkill.innerHTML = opts.skills.map(s => `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`).join('');
+            }
+            const container = document.getElementById('skills-list-container');
+            if (!container) return;
+            container.innerHTML = cvState.skills.map((s, idx) => `
+                <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-xl text-xs font-semibold">
+                    ${escapeHTML(s.name)}
+                    <button type="button" onclick="removeSkill(${idx})" class="text-indigo-400 hover:text-rose-600"><i class="fa-solid fa-xmark"></i></button>
+                </span>
+            `).join('');
+        }
+
+        function renderPortfolioForm(opts) {
+            const container = document.getElementById('portfolio-list-container');
+            if (!container) return;
+            container.innerHTML = cvState.portfolio.map((proj, idx) => `
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Proyecto Destacado</label>
+                        <select onchange="selectPortfolioProject(${idx}, this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl outline-none">
+                            ${opts.projects.map((p, pIdx) => `<option value="${pIdx}" ${proj.title === p.title ? 'selected' : ''}>${escapeHTML(p.title)} — ${escapeHTML(p.description)}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addSelectedSkill() {
+            const selectSkill = document.getElementById('select-new-skill');
+            if (!selectSkill || !selectSkill.value) return;
+            if (!cvState.skills.some(s => s.name === selectSkill.value)) {
+                cvState.skills.push({ name: selectSkill.value, level: "Avanzado" });
+                renderSkillsForm(getOptionsForCareer(cvState.personal.title));
+                saveAndRender();
+            }
+        }
+
+        function removeSkill(idx) {
+            cvState.skills.splice(idx, 1);
+            renderSkillsForm(getOptionsForCareer(cvState.personal.title));
+            saveAndRender();
+        }
+
+        function selectPortfolioProject(idx, projIdx) {
+            const opts = getOptionsForCareer(cvState.personal.title);
+            const selected = opts.projects[projIdx];
+            if (selected) {
+                cvState.portfolio[idx] = { ...selected };
+                saveAndRender();
+            }
+        }
+
+        function updateExperience(index, field, value) { cvState.experience[index][field] = value; saveAndRender(); }
+        function updateEducation(index, field, value) { cvState.education[index][field] = value; saveAndRender(); }
+        function handleNameChange(val) { cvState.personal.name = val; saveAndRender(); }
+        function updatePersonal(f, v) { cvState.personal[f] = v; saveAndRender(); }
+
+        function formatBullets(text) {
+            if (!text) return '';
+            const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+            if (lines.length <= 1) return `<p class="text-[11px] text-slate-600 leading-relaxed mt-1">${escapeHTML(text)}</p>`;
+            return `<ul class="list-disc list-inside text-[11px] text-slate-600 space-y-0.5 mt-1 leading-relaxed">
+                ${lines.map(line => `<li>${escapeHTML(line.replace(/^[•\-*]\s*/, ''))}</li>`).join('')}
+            </ul>`;
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+
+        /* ================= RENDERIZADO DE VISTA PREVIA A4 ================= */
+        function renderPreview() {
+            const doc = document.getElementById('cv-document');
+            if (!doc) return;
+            const { personal: p, experience: exp, education: edu, skills, certificates, portfolio } = cvState;
+
+            let html = `
+                <article class="a4-page text-slate-800">
+                    <div class="grid grid-cols-12 h-full">
+                        <aside class="col-span-4 bg-slate-900 text-white p-7 flex flex-col justify-between">
+                            <div class="space-y-6">
+                                ${p.photo ? `<div class="w-24 h-24 mx-auto rounded-2xl overflow-hidden border-2 border-white/20 mb-3"><img src="${p.photo}" class="w-full h-full object-cover"></div>` : ''}
+                                <div class="inline-block px-2.5 py-1 rounded bg-indigo-600 text-[10px] font-bold uppercase tracking-wider">Currículum Vitae</div>
+                                <div class="space-y-2.5">
+                                    <h3 class="text-[11px] font-bold uppercase tracking-widest text-white/70 border-b border-white/15 pb-1">Contacto</h3>
+                                    <ul class="space-y-2 text-[11px] text-white/90 break-all">
+                                        ${p.email ? `<li><i class="fa-solid fa-envelope mr-2"></i>${escapeHTML(p.email)}</li>` : ''}
+                                        ${p.phone ? `<li><i class="fa-solid fa-phone mr-2"></i>${escapeHTML(p.phone)}</li>` : ''}
+                                        ${p.location ? `<li><i class="fa-solid fa-location-dot mr-2"></i>${escapeHTML(p.location)}</li>` : ''}
+                                        ${p.website ? `<li><i class="fa-solid fa-globe mr-2"></i>${escapeHTML(p.website)}</li>` : ''}
+                                    </ul>
+                                </div>
+                                ${skills.length ? `
+                                    <div class="space-y-2.5">
+                                        <h3 class="text-[11px] font-bold uppercase tracking-widest text-white/70 border-b border-white/15 pb-1">Competencias</h3>
+                                        <div class="space-y-2">
+                                            ${skills.map(s => `
+                                                <div>
+                                                    <div class="flex justify-between text-[11px]"><span>${escapeHTML(s.name)}</span></div>
+                                                    <div class="w-full h-1 bg-white/15 rounded-full mt-1"><div class="h-full bg-indigo-400 rounded-full" style="width: 90%"></div></div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </aside>
+                        <div class="col-span-8 p-8 space-y-5">
+                            <header class="border-b-2 border-slate-900 pb-4">
+                                <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight uppercase">${escapeHTML(p.name || 'NOMBRE COMPLETO')}</h1>
+                                <p class="text-sm font-semibold text-indigo-700 mt-1">${escapeHTML(p.title || 'Carrera Profesional')}</p>
+                            </header>
+                            ${p.summary ? `<section><h2 class="text-xs font-bold uppercase tracking-wider text-slate-900 mb-1.5">Perfil Profesional</h2><p class="text-[11.5px] text-slate-600 leading-relaxed">${escapeHTML(p.summary)}</p></section>` : ''}
+                            ${exp.length && exp[0].role ? `
+                                <section class="space-y-3">
+                                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">Experiencia Laboral y Prácticas</h2>
+                                    ${exp.map(e => e.role ? `
+                                        <div>
+                                            <div class="flex justify-between items-baseline"><h3 class="text-xs font-bold text-slate-900">${escapeHTML(e.role)}</h3><span class="text-[10.5px] font-semibold text-indigo-700">${escapeHTML(e.period)}</span></div>
+                                            <p class="text-[11px] font-medium text-slate-500">${escapeHTML(e.company)}${e.location ? ` • ${escapeHTML(e.location)}` : ''}</p>
+                                            ${formatBullets(e.description)}
+                                        </div>
+                                    ` : '').join('')}
+                                </section>
+                            ` : ''}
+                            ${edu.length && edu[0].degree ? `
+                                <section class="space-y-2">
+                                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">Formación Académica</h2>
+                                    ${edu.map(ed => ed.degree ? `
+                                        <div>
+                                            <div class="flex justify-between items-baseline"><h3 class="text-xs font-bold text-slate-900">${escapeHTML(ed.degree)}</h3><span class="text-[10.5px] font-semibold text-slate-500">${escapeHTML(ed.period)}</span></div>
+                                            <p class="text-[11px] text-slate-600">${escapeHTML(ed.institution)}${ed.details ? ` — <span class="italic">${escapeHTML(ed.details)}</span>` : ''}</p>
+                                        </div>
+                                    ` : '').join('')}
+                                </section>
+                            ` : ''}
+                            ${portfolio && portfolio.length && portfolio[0].title ? `
+                                <section class="space-y-1.5">
+                                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">Proyecto Destacado</h2>
+                                    <p class="text-xs font-bold text-slate-800">${escapeHTML(portfolio[0].title)}</p>
+                                    <p class="text-[11px] text-slate-600">${escapeHTML(portfolio[0].description)}</p>
+                                </section>
+                            ` : ''}
+                        </div>
+                    </div>
+                </article>
+            `;
+
+            if (certificates && certificates.length > 0) {
+                certificates.forEach((cert, idx) => {
+                    const isDocx = cert.type === 'docx' || !!cert.htmlContent;
+                    html += `
+                        <article class="a4-page text-slate-800 p-8 flex flex-col justify-between">
+                            <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
+                                <div class="flex items-center gap-2">
+                                    <i class="${isDocx ? 'fa-solid fa-file-word text-blue-600' : 'fa-solid fa-award text-amber-500'} text-sm"></i>
+                                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900">Dossier Documental — Constancia #${idx + 1}</h2>
+                                </div>
+                                <span class="text-[11px] text-slate-500 truncate max-w-[240px] font-medium">${escapeHTML(cert.name)}</span>
+                            </div>
+
+                            <div class="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden my-auto w-full">
+                                ${isDocx ? `
+                                    <div class="docx-preview-content w-full h-full max-h-[220mm] overflow-y-auto p-6 bg-white rounded-xl border border-slate-200 shadow-xs text-left">
+                                        ${cert.htmlContent}
+                                    </div>
+                                ` : `
+                                    <img src="${cert.dataUrl}" alt="${escapeHTML(cert.name)}" class="max-w-full max-h-[220mm] object-contain rounded-xl shadow-md border border-slate-200">
+                                `}
+                            </div>
+
+                            <footer class="border-t border-slate-200 pt-3 flex justify-between items-center text-[10px] text-slate-400">
+                                <span>GENERADOR WEB DE CURRÍCULUM (CV) — Anexo Verificado</span>
+                                <span>Hoja ${idx + 2}</span>
+                            </footer>
+                        </article>
+                    `;
+                });
+            }
+            doc.innerHTML = html;
+        }
+
+        function saveAndRender() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cvState)); } catch(e) {}
+            renderPreview();
+        }
+
+        /* ================= PROCESAMIENTO DE ARCHIVOS WORD Y FOTOS ================= */
+        function processCertificateFile(file) {
+            return new Promise((resolve) => {
+                const fileName = file.name;
+                const ext = fileName.split('.').pop().toLowerCase();
+
+                if (ext === 'doc') {
+                    showToast('Los archivos .doc antiguos no son compatibles. Guárdalo como .docx en Word o sube una imagen.');
+                    return resolve(null);
+                }
+
+                if (ext === 'docx') {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (typeof mammoth === 'undefined') {
+                            showToast('Error: librería Mammoth no disponible');
+                            return resolve(null);
+                        }
+                        mammoth.convertToHtml({ arrayBuffer: e.target.result })
+                            .then(function(result) {
+                                let html = result.value;
+                                if (!html || html.trim() === '') {
+                                    html = '<p class="text-center text-slate-500 italic py-8">Documento Word sin contenido de texto o imagen legible.</p>';
+                                }
+                                resolve({ name: fileName, type: 'docx', htmlContent: html });
+                            })
+                            .catch(function() {
+                                showToast('No se pudo leer el archivo Word: ' + fileName);
+                                resolve(null);
+                            });
+                    };
+                    reader.onerror = () => resolve(null);
+                    reader.readAsArrayBuffer(file);
+                } else if (file.type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif'].includes(ext)) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        resolve({ name: fileName, type: 'image', dataUrl: e.target.result });
+                    };
+                    reader.onerror = () => resolve(null);
+                    reader.readAsDataURL(file);
+                } else {
+                    showToast('Formato no admitido. Usa imágenes o Word (.docx)');
+                    resolve(null);
+                }
+            });
+        }
+
+        async function handleMultipleCertificatesUpload(e) {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+            let addedCount = 0;
+            for (const file of files) {
+                const certObj = await processCertificateFile(file);
+                if (certObj) { cvState.certificates.push(certObj); addedCount++; }
+            }
+            if (addedCount > 0) {
+                renderCertificatesForm();
+                saveAndRender();
+                showToast(`${addedCount} archivo(s) añadido(s) a la vista previa`);
+            }
+            e.target.value = '';
+        }
+
+        async function handleWordDocUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const certObj = await processCertificateFile(file);
+            if (certObj) {
+                cvState.certificates.push(certObj);
+                renderCertificatesForm();
+                saveAndRender();
+                showToast('Documento Word importado y visible en la hoja');
+            }
+            e.target.value = '';
+        }
+
+        function renderCertificatesForm() {
+            const c = document.getElementById('certificates-list-container');
+            if (!c) return;
+            c.innerHTML = cvState.certificates.length ? cvState.certificates.map((cert, idx) => `
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 truncate mr-2">
+                        <i class="${cert.type === 'docx' ? 'fa-solid fa-file-word text-blue-600' : 'fa-solid fa-file-image text-emerald-600'} text-base"></i>
+                        <span class="text-xs font-medium text-slate-700 truncate">${escapeHTML(cert.name)}</span>
+                        <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${cert.type === 'docx' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}">${cert.type || 'img'}</span>
+                    </div>
+                    <button type="button" onclick="cvState.certificates.splice(${idx},1);renderCertificatesForm();saveAndRender();showToast('Documento eliminado');" class="text-rose-600 hover:text-rose-800 text-xs p-1.5 transition">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `).join('') : '<p class="text-xs text-slate-400 text-center py-4">Aún no has subido certificados o constancias.</p>';
+        }
+
+        /* ================= FOTO DE PERFIL ================= */
+        function handlePhotoUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                cvState.personal.photo = ev.target.result;
+                document.getElementById('form-photo-preview').src = ev.target.result;
+                document.getElementById('form-photo-preview').classList.remove('hidden');
+                document.getElementById('form-photo-placeholder').classList.add('hidden');
+                document.getElementById('btn-remove-photo').classList.remove('hidden');
+                saveAndRender();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removePhoto() {
+            cvState.personal.photo = '';
+            document.getElementById('form-photo-preview').classList.add('hidden');
+            document.getElementById('form-photo-placeholder').classList.remove('hidden');
+            document.getElementById('btn-remove-photo').classList.add('hidden');
+            saveAndRender();
+        }
+
+        /* ================= SINCRONIZACIÓN EN LA NUBE (MULTI-CELULAR / PC) ================= */
+        const CLOUD_CHANNEL_ID = 'cvstudio_nery_acobamba_2026';
+        const DEFAULT_CLOUD_API = 'https://kvdb.io/A5x9vK2mN8pQ4rT7wY1zB/' + CLOUD_CHANNEL_ID;
+        const SUBMISSIONS_STORAGE_KEY = 'cvstudio_pro_submissions_v1';
+
+        function getCloudBaseUrl() {
+            return localStorage.getItem('cvstudio_custom_cloud_url') || DEFAULT_CLOUD_API;
+        }
+
+        function openCloudConfigModal() {
+            document.getElementById('custom-firebase-url').value = localStorage.getItem('cvstudio_custom_cloud_url') || '';
+            document.getElementById('cloud-config-modal').classList.remove('hidden');
+            document.getElementById('cloud-config-modal').classList.add('flex');
+        }
+
+        function closeCloudConfigModal() {
+            document.getElementById('cloud-config-modal').classList.add('hidden');
+            document.getElementById('cloud-config-modal').classList.remove('flex');
+        }
+
+        function saveCloudUrl() {
+            const url = document.getElementById('custom-firebase-url').value.trim().replace(/\/$/, '');
+            if (url) {
+                localStorage.setItem('cvstudio_custom_cloud_url', url);
+            } else {
+                localStorage.removeItem('cvstudio_custom_cloud_url');
+            }
+            closeCloudConfigModal();
+            refreshAdminRequests();
+            showToast('Configuración de nube actualizada');
+        }
+
+        function resetCloudUrl() {
+            localStorage.removeItem('cvstudio_custom_cloud_url');
+            document.getElementById('custom-firebase-url').value = '';
+            closeCloudConfigModal();
+            refreshAdminRequests();
+            showToast('Canal en la nube por defecto restaurado');
+        }
+
+        async function fetchCloudState() {
+            const localUsers = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+            const localSubs = JSON.parse(localStorage.getItem(SUBMISSIONS_STORAGE_KEY) || '[]');
+            try {
+                const base = getCloudBaseUrl();
+                const endpoint = base.includes('firebaseio.com') ? `${base}/cv_portal_data.json` : base;
+                const res = await fetch(endpoint, { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && typeof data === 'object') {
+                        const cloudUsers = Array.isArray(data.users) ? data.users : [];
+                        const cloudSubs = Array.isArray(data.submissions) ? data.submissions : [];
+
+                        // Fusionar usuarios (priorizando el estado más reciente por updatedAt o aprobado)
+                        const mergedMap = new Map();
+                        [...localUsers, ...cloudUsers].forEach(u => {
+                            if (!u || !u.email) return;
+                            const key = u.email.toLowerCase();
+                            const existing = mergedMap.get(key);
+                            if (!existing || (u.updatedAt || 0) >= (existing.updatedAt || 0)) {
+                                mergedMap.set(key, u);
+                            }
+                        });
+                        const mergedUsers = Array.from(mergedMap.values());
+                        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mergedUsers));
+
+                        // Fusionar solicitudes de revisión de CV
+                        const subsMap = new Map();
+                        [...localSubs, ...cloudSubs].forEach(s => {
+                            if (!s || !s.id) return;
+                            const existing = subsMap.get(s.id);
+                            if (!existing || (s.updatedAt || 0) >= (existing.updatedAt || 0)) {
+                                subsMap.set(s.id, s);
+                            }
+                        });
+                        const mergedSubs = Array.from(subsMap.values());
+                        localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(mergedSubs));
+
+                        return { users: mergedUsers, submissions: mergedSubs, online: true };
+                    }
+                }
+            } catch (err) {
+                console.warn('Modo offline/local activo:', err);
+            }
+            return { users: localUsers, submissions: localSubs, online: false };
+        }
+
+        async function pushCloudState(users, submissions) {
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+            localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(submissions));
+            try {
+                const base = getCloudBaseUrl();
+                const endpoint = base.includes('firebaseio.com') ? `${base}/cv_portal_data.json` : base;
+                await fetch(endpoint, {
+                    method: base.includes('firebaseio.com') ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ users, submissions, lastSync: Date.now() })
+                });
+                return true;
+            } catch (err) {
+                console.warn('Error al sincronizar en nube:', err);
+                return false;
+            }
+        }
+
+        /* ================= ACCESO Y AUTENTICACIÓN ================= */
+        function showAuthMode(mode) {
+            document.getElementById('auth-message').textContent = '';
+            document.getElementById('auth-register-box').classList.toggle('hidden', mode !== 'register');
+            document.getElementById('auth-login-box').classList.toggle('hidden', mode !== 'login');
+            document.getElementById('auth-tab-register').className = mode === 'register' ? 'py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold transition' : 'py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold transition';
+            document.getElementById('auth-tab-login').className = mode === 'login' ? 'py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold transition' : 'py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold transition';
+        }
+
+        async function studentRegister() {
+            const name = document.getElementById('student-reg-name').value.trim();
+            const email = document.getElementById('student-reg-email').value.trim().toLowerCase();
+            const phone = document.getElementById('student-reg-phone').value.trim();
+            const pass = document.getElementById('student-reg-pass').value;
+            const msgEl = document.getElementById('auth-message');
+
+            if (!name || !email || !phone || !pass) {
+                msgEl.className = 'text-xs text-center text-rose-600 font-medium';
+                msgEl.textContent = 'Por favor completa todos los campos obligatorios.';
+                return;
+            }
+            if (pass.length < 6) {
+                msgEl.className = 'text-xs text-center text-rose-600 font-medium';
+                msgEl.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+                return;
+            }
+
+            msgEl.className = 'text-xs text-center text-indigo-600 font-medium';
+            msgEl.textContent = 'Enviando solicitud de registro...';
+
+            const state = await fetchCloudState();
+            const users = state.users || [];
+            const newUser = {
+                name,
+                email,
+                phone,
+                pass,
+                status: 'pending',
+                date: new Date().toLocaleString('es-PE'),
+                updatedAt: Date.now()
+            };
+
+            const idx = users.findIndex(u => u.email.toLowerCase() === email);
+            if (idx === -1) {
+                users.unshift(newUser);
+            } else {
+                newUser.status = users[idx].status === 'approved' ? 'approved' : 'pending';
+                users[idx] = newUser;
+            }
+
+            await pushCloudState(users, state.submissions || []);
+
+            msgEl.className = 'text-xs text-center text-emerald-600 font-semibold';
+            msgEl.textContent = '¡Solicitud enviada con éxito! Aparece en el panel de la administradora. Cuando sea aceptada, podrás iniciar sesión.';
+            showAuthMode('login');
+            document.getElementById('student-login-email').value = email;
+            document.getElementById('student-login-pass').value = pass;
+        }
+
+        async function studentLogin() {
+            const email = document.getElementById('student-login-email').value.trim().toLowerCase();
+            const pass = document.getElementById('student-login-pass').value;
+            const msgEl = document.getElementById('auth-message');
+
+            if (!email || !pass) {
+                msgEl.className = 'text-xs text-center text-rose-600 font-medium';
+                msgEl.textContent = 'Ingresa tu correo y contraseña.';
+                return;
+            }
+
+            msgEl.className = 'text-xs text-center text-indigo-600 font-medium';
+            msgEl.textContent = 'Verificando autorización...';
+
+            const state = await fetchCloudState();
+            const users = state.users || [];
+            const user = users.find(u => u.email.toLowerCase() === email && u.pass === pass);
+
+            if (!user) {
+                msgEl.className = 'text-xs text-center text-rose-600 font-medium';
+                msgEl.textContent = 'Correo o contraseña incorrectos, o aún no te has registrado.';
+                return;
+            }
+            if (user.status === 'rejected') {
+                msgEl.className = 'text-xs text-center text-rose-600 font-medium';
+                msgEl.textContent = 'Tu solicitud de acceso fue rechazada por la administradora.';
+                return;
+            }
+            if (user.status !== 'approved') {
+                msgEl.className = 'text-xs text-center text-amber-600 font-semibold';
+                msgEl.textContent = 'Tu solicitud sigue PENDIENTE de aprobación por la administradora.';
+                return;
+            }
+
+            msgEl.textContent = '';
+            document.getElementById('auth-gate').classList.add('hidden');
+            document.getElementById('session-strip').classList.remove('hidden');
+            document.getElementById('session-label').textContent = `Estudiante / Egresado: ${user.name}`;
+            
+            const badge = document.getElementById('approval-status-badge');
+            if (badge) {
+                badge.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+                badge.innerHTML = '<i class="fa-solid fa-circle-check text-[9px]"></i> Aprobado';
+            }
+
+            cvState.personal.name = user.name;
+            cvState.personal.email = user.email;
+            cvState.personal.phone = user.phone;
+            syncAllSelectorsAndRender();
+            showToast(`¡Bienvenido/a, ${user.name}!`);
+        }
+
+        function adminDirectEnter(openPanel = true) {
+            localStorage.setItem('cvstudio_is_admin_device', 'true');
+            document.getElementById('auth-gate').classList.add('hidden');
+            document.getElementById('session-strip').classList.remove('hidden');
+            document.getElementById('session-label').textContent = 'Modo Administradora (Acceso Directo)';
+            const badge = document.getElementById('approval-status-badge');
+            if (badge) {
+                badge.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+                badge.innerHTML = '<i class="fa-solid fa-shield-check text-[9px]"></i> Administradora';
+            }
+            if (openPanel) {
+                openAdminModal();
+            }
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('cvstudio_is_admin_device');
+            location.reload();
+        }
+
+        /* ================= CATÁLOGO DE CARRERAS Y MODALES ================= */
+        function initCareersCatalog() {
+            const welcomeSelect = document.getElementById('welcome-career-select');
+            if (welcomeSelect) {
+                welcomeSelect.innerHTML = Object.values(CAREERS_CATALOG).flat().map(c => `<option value="${c}">${c}</option>`).join('');
+            }
+            renderCareersModal('');
+        }
+
+        function renderCareersModal(q) {
+            const body = document.getElementById('careers-modal-body');
+            if (!body) return;
+            const query = (q || '').toLowerCase().trim();
+            let html = '';
+            for (const [cat, careers] of Object.entries(CAREERS_CATALOG)) {
+                const filtered = careers.filter(c => c.toLowerCase().includes(query));
+                if (!filtered.length) continue;
+                html += `<div><h4 class="text-xs font-bold uppercase text-indigo-600 mb-2">${cat}</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${filtered.map(c => `<button type="button" onclick="applyCareerSelection('${c.replace(/'/g, "\\'")}');closeCareersModal();showToast('Opciones actualizadas para ${c}');" class="text-left px-3 py-2 text-xs text-slate-700 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 rounded-xl border border-slate-200 transition">${c}</button>`).join('')}</div></div>`;
+            }
+            body.innerHTML = html || '<p class="text-center text-xs text-slate-500 py-8">Sin resultados.</p>';
+        }
+
+        function filterCareersModal(v) { renderCareersModal(v); }
+        function openCareersModal() { document.getElementById('careers-modal').classList.remove('hidden'); document.getElementById('careers-modal').classList.add('flex'); }
+        function closeCareersModal() { document.getElementById('careers-modal').classList.add('hidden'); document.getElementById('careers-modal').classList.remove('flex'); }
+
+        function openWelcomeModal() { document.getElementById('welcome-student-modal').classList.remove('hidden'); document.getElementById('welcome-student-modal').classList.add('flex'); }
+        function closeWelcomeModal() { document.getElementById('welcome-student-modal').classList.add('hidden'); document.getElementById('welcome-student-modal').classList.remove('flex'); }
+        function confirmStudentWelcome() {
+            const name = document.getElementById('welcome-name-input').value.trim();
+            const career = document.getElementById('welcome-career-select').value;
+            const phone = document.getElementById('welcome-contact-input').value.trim();
+            if (name) cvState.personal.name = name;
+            if (phone) cvState.personal.phone = phone;
+            applyCareerSelection(career);
+            closeWelcomeModal();
+            showToast('Perfil y selectores listos');
+        }
+
+        function switchFormTab(name) {
+            document.querySelectorAll('.form-tab-btn').forEach(b => b.className = 'form-tab-btn px-3 py-2.5 text-xs font-medium rounded-t-xl border-b-2 border-transparent text-slate-600');
+            const btn = document.getElementById(`tab-btn-${name}`);
+            if (btn) btn.className = 'form-tab-btn px-3 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-indigo-600 text-indigo-600 bg-white';
+            document.querySelectorAll('.form-tab-content').forEach(s => s.classList.add('hidden'));
+            const content = document.getElementById(`tab-content-${name}`);
+            if (content) content.classList.remove('hidden');
+        }
+
+        function switchMobileView(view) {
+            document.getElementById('editor-panel').classList.toggle('hidden', view !== 'editor');
+            document.getElementById('preview-panel').classList.toggle('hidden', view !== 'preview');
+            document.getElementById('preview-panel').classList.toggle('flex', view === 'preview');
+        }
+
+        function openSubmitReviewModal() {
+            document.getElementById('summary-review-name').textContent = cvState.personal.name || 'Sin nombre';
+            document.getElementById('summary-review-career').textContent = cvState.personal.title;
+            document.getElementById('modal-cert-count').textContent = cvState.certificates.length;
+            document.getElementById('submit-review-modal').classList.remove('hidden');
+            document.getElementById('submit-review-modal').classList.add('flex');
+        }
+        function closeSubmitReviewModal() { document.getElementById('submit-review-modal').classList.add('hidden'); }
+        let adminAutoRefreshTimer = null;
+
+        async function finalizeSubmissionAndNotify(channel = 'whatsapp') {
+            closeSubmitReviewModal();
+            showToast('Guardando solicitud de CV en el panel de la administradora...');
+
+            const state = await fetchCloudState();
+            const submissions = state.submissions || [];
+            const newSub = {
+                id: 'cv_' + Date.now(),
+                name: cvState.personal.name || 'Estudiante sin nombre',
+                email: cvState.personal.email || '',
+                phone: cvState.personal.phone || '',
+                career: cvState.personal.title || '',
+                certCount: cvState.certificates.length,
+                status: 'pending',
+                date: new Date().toLocaleString('es-PE'),
+                updatedAt: Date.now()
+            };
+            submissions.unshift(newSub);
+            await pushCloudState(state.users || [], submissions);
+
+            const body = `Hola Ingeniera Administradora, envío mi CV para revisión.\nEstudiante: ${newSub.name}\nCarrera: ${newSub.career}\nTeléfono: ${newSub.phone}\nCertificados adjuntos: ${newSub.certCount}`;
+            window.open(`https://api.whatsapp.com/send?phone=${DEFAULT_ADMIN_WHATSAPP}&text=${encodeURIComponent(body)}`, '_blank');
+        }
+
+        function openAdminModal() {
+            document.getElementById('admin-modal').classList.remove('hidden');
+            document.getElementById('admin-modal').classList.add('flex');
+            const dash = document.getElementById('admin-dashboard-box');
+            if (dash) {
+                dash.classList.remove('hidden');
+                dash.classList.add('flex');
+            }
+            refreshAdminRequests();
+            startAdminAutoRefresh();
+        }
+
+        function closeAdminModal() {
+            document.getElementById('admin-modal').classList.add('hidden');
+            if (adminAutoRefreshTimer) {
+                clearInterval(adminAutoRefreshTimer);
+                adminAutoRefreshTimer = null;
+            }
+        }
+
+        function startAdminAutoRefresh() {
+            if (adminAutoRefreshTimer) clearInterval(adminAutoRefreshTimer);
+            adminAutoRefreshTimer = setInterval(() => {
+                const modal = document.getElementById('admin-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    refreshAdminRequests(true);
+                }
+            }, 5000);
+        }
+
+        async function refreshAdminRequests(silent = false) {
+            if (!silent) showToast('Sincronizando solicitudes...');
+            const state = await fetchCloudState();
+            renderAdminAccessRequests(state.users, state.submissions);
+        }
+
+        function renderAdminAccessRequests(usersParam, subsParam) {
+            const list = document.getElementById('access-requests-list');
+            const subsList = document.getElementById('cv-submissions-list');
+            const counter = document.getElementById('requests-counter-badge');
+            const users = usersParam || JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+            const submissions = subsParam || JSON.parse(localStorage.getItem(SUBMISSIONS_STORAGE_KEY) || '[]');
+
+            if (counter) {
+                const pendingCount = users.filter(u => u.status === 'pending').length;
+                counter.textContent = `${users.length} registrados (${pendingCount} pendientes)`;
+            }
+
+            if (list) {
+                list.innerHTML = users.length ? users.map((u) => {
+                    const isApproved = u.status === 'approved';
+                    const isRejected = u.status === 'rejected';
+                    const statusLabel = isApproved ? 'APROBADO' : (isRejected ? 'RECHAZADO' : 'PENDIENTE');
+                    const statusColor = isApproved ? 'text-emerald-600' : (isRejected ? 'text-rose-600' : 'text-amber-600');
+                    const safeEmail = escapeHTML(u.email);
+
+                    return `
+                    <div class="p-4 bg-white rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
+                        <div class="space-y-1">
+                            <div>
+                                <strong class="text-slate-900 text-sm">${escapeHTML(u.name)}</strong>
+                                <span class="text-slate-600">(${safeEmail})</span>
+                                ${u.phone ? ` - <span class="text-slate-700 font-medium">Tel: ${escapeHTML(u.phone)}</span>` : ''}
+                            </div>
+                            <div class="text-[11px] text-slate-500 flex items-center gap-3">
+                                <span>Estado: <span class="uppercase font-bold ${statusColor}">${statusLabel}</span></span>
+                                ${u.date ? `<span>• Registro: ${escapeHTML(u.date)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${!isApproved ? `<button type="button" onclick="updateStudentStatus('${safeEmail}', 'approved')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition flex items-center gap-1"><i class="fa-solid fa-check"></i> Aceptar</button>` : ''}
+                            ${!isRejected ? `<button type="button" onclick="updateStudentStatus('${safeEmail}', 'rejected')" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg font-semibold transition">Rechazar</button>` : ''}
+                            <button type="button" onclick="deleteStudentRequest('${safeEmail}')" title="Eliminar registro" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    `;
+                }).join('') : '<p class="text-xs text-slate-500 bg-white p-4 rounded-xl border border-slate-200">No hay solicitudes de estudiantes registradas aún.</p>';
+            }
+
+            if (subsList) {
+                subsList.innerHTML = submissions.length ? submissions.map((s) => `
+                    <div class="p-4 bg-white rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
+                        <div class="space-y-1">
+                            <div>
+                                <strong class="text-slate-900 text-sm">${escapeHTML(s.name)}</strong>
+                                <span class="text-indigo-700 font-semibold">• ${escapeHTML(s.career)}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-500">
+                                Tel: ${escapeHTML(s.phone || 'N/A')} • Certificados: <strong>${s.certCount || 0}</strong> • Enviado: ${escapeHTML(s.date || '')}
+                                • Estado: <span class="uppercase font-bold ${s.status === 'approved' ? 'text-emerald-600' : 'text-amber-600'}">${s.status === 'approved' ? 'REVISADO' : 'PENDIENTE'}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${s.status !== 'approved' ? `<button type="button" onclick="approveCvSubmission('${escapeHTML(s.id)}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">Marcar Revisado</button>` : ''}
+                            <button type="button" onclick="deleteCvSubmission('${escapeHTML(s.id)}')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('') : '<p class="text-xs text-slate-500 bg-white p-4 rounded-xl border border-slate-200">Aún no se han enviado solicitudes de revisión de CV.</p>';
+            }
+        }
+
+        async function updateStudentStatus(email, newStatus) {
+            const state = await fetchCloudState();
+            const users = state.users || [];
+            const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+            if (idx !== -1) {
+                users[idx].status = newStatus;
+                users[idx].updatedAt = Date.now();
+                await pushCloudState(users, state.submissions || []);
+                renderAdminAccessRequests(users, state.submissions || []);
+                showToast(newStatus === 'approved' ? 'Estudiante aprobado y guardado en la nube' : 'Solicitud rechazada');
+            }
+        }
+
+        async function deleteStudentRequest(email) {
+            const state = await fetchCloudState();
+            const users = (state.users || []).filter(u => u.email.toLowerCase() !== email.toLowerCase());
+            await pushCloudState(users, state.submissions || []);
+            renderAdminAccessRequests(users, state.submissions || []);
+            showToast('Registro eliminado');
+        }
+
+        async function approveCvSubmission(id) {
+            const state = await fetchCloudState();
+            const submissions = state.submissions || [];
+            const idx = submissions.findIndex(s => s.id === id);
+            if (idx !== -1) {
+                submissions[idx].status = 'approved';
+                submissions[idx].updatedAt = Date.now();
+                await pushCloudState(state.users || [], submissions);
+                renderAdminAccessRequests(state.users || [], submissions);
+                showToast('CV marcado como revisado');
+            }
+        }
+
+        async function deleteCvSubmission(id) {
+            const state = await fetchCloudState();
+            const submissions = (state.submissions || []).filter(s => s.id !== id);
+            await pushCloudState(state.users || [], submissions);
+            renderAdminAccessRequests(state.users || [], submissions);
+            showToast('Solicitud de CV eliminada');
+        }
+
+        function exportToPDF() {
+            const element = document.getElementById('cv-document');
+            if (typeof html2pdf === 'undefined') { window.print(); return; }
+            showToast('Generando documento PDF...');
+            html2pdf().set({
+                margin: 0,
+                filename: `CV_${(cvState.personal.name || 'documento').replace(/\s+/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(element).save().then(() => showToast('PDF exportado con éxito')).catch(err => {
+                console.error(err);
+                window.print();
+            });
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast-notification');
+            document.getElementById('toast-message').textContent = msg;
+            t.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => t.classList.add('translate-y-24', 'opacity-0'), 3000);
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            initCareersCatalog();
+            applyCareerSelection(cvState.personal.title);
+            await fetchCloudState();
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('admin') === '1' || localStorage.getItem('cvstudio_is_admin_device') === 'true') {
+                adminDirectEnter(false);
+            }
+        });
+    </script>
+</body>
+</html>
